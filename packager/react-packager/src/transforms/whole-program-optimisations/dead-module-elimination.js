@@ -8,8 +8,6 @@
  */
 'use strict';
 
-const t = require('babel-types');
-
 var globals = Object.create(null);
 var requires = Object.create(null);
 var _requires;
