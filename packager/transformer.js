@@ -12,7 +12,7 @@
 
 const babel = require('babel-core');
 const fs = require('fs');
-const inlineRequires = require('fbjs-scripts/babel-6/inline-requires');
+const inlineRequires = require('fbjs-scripts/babel/inline-requires');
 const json5 = require('json5');
 const path = require('path');
 
@@ -24,7 +24,7 @@ const babelRC =
 function transform(src, filename, options) {
   options = options || {};
 
-  const extraPlugins = ['external-helpers-2'];
+  const plugins = [];
   const extraConfig = {
     filename,
     sourceFileName: filename,
@@ -33,27 +33,44 @@ function transform(src, filename, options) {
   const config = Object.assign({}, babelRC, extraConfig);
 
   if (options.inlineRequires) {
-    extraPlugins.push(inlineRequires);
+    plugins.push({
+      position: 'after',
+      transformer: inlineRequires,
+    });
   }
-  config.plugins = extraPlugins.concat(config.plugins);
+  config.plugins = plugins.concat(config.plugins);
 
-  // Manually resolve all default Babel plugins. babel.transform will attempt to resolve
-  // all base plugins relative to the file it's compiling. This makes sure that we're
-  // using the plugins installed in the react-native package.
-  config.plugins = config.plugins.map(function(plugin) {
-    // Normalise plugin to an array.
-    if (!Array.isArray(plugin)) {
-      plugin = [plugin];
-    }
-    // Only resolve the plugin if it's a string reference.
-    if (typeof plugin[0] === 'string') {
-      plugin[0] = require(`babel-plugin-${plugin[0]}`);
-      plugin[0] = plugin[0].__esModule ? plugin[0].default : plugin[0];
-    }
-    return plugin;
+  const result = babel.transform(src, {
+    retainLines: true,
+    compact: true,
+    comments: false,
+    filename,
+    whitelist: [
+      // Keep in sync with packager/react-packager/.babelrc
+      'es6.arrowFunctions',
+      'es6.blockScoping',
+      'es6.classes',
+      'es6.constants',
+      'es6.destructuring',
+      'es6.modules',
+      'es6.parameters',
+      'es6.properties.computed',
+      'es6.properties.shorthand',
+      'es6.spread',
+      'es6.templateLiterals',
+      'es7.asyncFunctions',
+      'es7.trailingFunctionCommas',
+      'es7.objectRestSpread',
+      'flow',
+      'react',
+      'react.displayName',
+      'regenerator',
+    ],
+    plugins,
+    sourceFileName: filename,
+    sourceMaps: false,
+    extra: options || {},
   });
-
-  const result = babel.transform(src, Object.assign({}, babelRC, config));
 
   return {
     code: result.code
