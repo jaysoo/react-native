@@ -95,18 +95,17 @@ class Bundle {
       return this._source;
     }
 
-    const wpoActivity = Activity.startEvent('Whole Program Optimisations');
+    // const wpoActivity = Activity.startEvent('Whole Program Optimisations');
     const result = require('babel-core').transform(this._source, {
       retainLines: true,
       compact: true,
-      plugins: require('../transforms/whole-program-optimisations'),
       inputSourceMap: this.getSourceMap(),
     });
 
     this._source = result.code;
     this._sourceMap = result.map;
 
-    Activity.endEvent(wpoActivity);
+    // Activity.endEvent(wpoActivity);
 
     return this._source;
   }
