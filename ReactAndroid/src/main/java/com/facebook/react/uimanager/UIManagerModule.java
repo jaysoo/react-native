@@ -15,8 +15,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import android.content.Context;
+import android.os.Build;
 import android.util.DisplayMetrics;
+import android.view.Display;
+import android.view.WindowManager;
 
+import com.facebook.common.logging.FLog;
 import com.facebook.csslayout.CSSLayoutContext;
 import com.facebook.infer.annotation.Assertions;
 import com.facebook.react.animation.Animation;
@@ -30,6 +35,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.common.ReactConstants;
 import com.facebook.react.uimanager.debug.NotThreadSafeViewHierarchyUpdateDebugListener;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.facebook.systrace.Systrace;
@@ -85,6 +91,21 @@ public class UIManagerModule extends ReactContextBaseJavaModule implements
     super(reactContext);
     mEventDispatcher = new EventDispatcher(reactContext);
     DisplayMetrics displayMetrics = reactContext.getResources().getDisplayMetrics();
+
+    // Get the real display metrics if we are using API level 17 or higher.
+    // The real metrics include system decor elements (e.g. soft menu bar).
+    //
+    // See: http://developer.android.com/reference/android/view/Display.html#getRealMetrics(android.util.DisplayMetrics)
+    try {
+      if (Build.VERSION.SDK_INT >= 17) {
+        WindowManager wm = (WindowManager)reactContext.getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        display.getRealMetrics(displayMetrics);
+      }
+    } catch (Exception e) {
+      FLog.e(ReactConstants.TAG, "Could not get real display metrics", e);
+    }
+
     DisplayMetricsHolder.setDisplayMetrics(displayMetrics);
     mModuleConstants = createConstants(displayMetrics, viewManagerList);
     mUIImplementation = uiImplementation;
